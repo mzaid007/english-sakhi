@@ -45,7 +45,7 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* Soft saffron / emerald wash — atmosphere without flat cream */
+/* Soft saffron / emerald wash — stronger side light on wide screens */
 .sakhi-backdrop {
   background-color: #faf8f5;
   background-image:
@@ -59,6 +59,27 @@ body {
       rgb(209 250 229 / 0.45),
       transparent 50%
     );
+}
+
+@media (min-width: 1024px) {
+  .sakhi-backdrop {
+    background-image:
+      radial-gradient(
+        ellipse 70% 90% at 12% 40%,
+        rgb(254 243 199 / 0.75),
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse 55% 70% at 88% 70%,
+        rgb(209 250 229 / 0.55),
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse 40% 40% at 70% 10%,
+        rgb(254 243 199 / 0.35),
+        transparent 60%
+      );
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
