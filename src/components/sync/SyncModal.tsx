@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Cloud, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 interface SyncModalProps {
@@ -15,9 +15,13 @@ type Step = "email" | "otp";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 28 };
 
+function authRedirectTo(): string {
+  if (typeof window === "undefined") return "https://english-sakhi.vercel.app";
+  return `${window.location.origin}/`;
+}
+
 /**
- * Passwordless email OTP. Email entry is the only typing needed for cloud sync
- * (learning UI stays zero-English-keyboard).
+ * Passwordless email auth (OTP code and/or magic link, per Supabase template).
  */
 export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
   const [step, setStep] = useState<Step>("email");
@@ -25,6 +29,32 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
   const [messageHi, setMessageHi] = useState<string | null>(null);
+
+  // If user opens the magic link, session appears — finish sync.
+  useEffect(() => {
+    if (!open) return;
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        onSynced();
+        onClose();
+      }
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+        onSynced();
+        onClose();
+        setStep("email");
+        setOtp("");
+        setMessageHi(null);
+      }
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, [open, onClose, onSynced]);
 
   async function sendOtp() {
     const supabase = getSupabaseBrowserClient();
@@ -44,7 +74,10 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
     setMessageHi(null);
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: authRedirectTo(),
+      },
     });
     setBusy(false);
 
@@ -54,7 +87,9 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
     }
 
     setStep("otp");
-    setMessageHi("ईमेल में ६ अंकों का कोड आया होगा।");
+    setMessageHi(
+      "ईमेल खोलें: लिंक पर टैप करें, या अगर कोड दिखे तो यहाँ लिखें।",
+    );
   }
 
   async function verifyOtp() {
@@ -63,7 +98,7 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
 
     const code = otp.trim();
     if (code.length < 6) {
-      setMessageHi("६ अंकों का कोड डालें।");
+      setMessageHi("कोड कम से कम ६ अंक का होना चाहिए।");
       return;
     }
 
@@ -128,8 +163,8 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
             </div>
 
             <p className="mb-4 font-hindi text-sm leading-relaxed text-sakhi-muted">
-              पासवर्ड नहीं लगेगा। सिर्फ़ ईमेल पर कोड आएगा — दूसरे फ़ोन पर भी
-              प्रगति मिलेगी।
+              पासवर्ड नहीं लगेगा। ईमेल में लिंक या कोड आएगा — टैप करें या कोड
+              लिखें।
             </p>
 
             {step === "email" ? (
@@ -153,23 +188,27 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
                   onClick={() => void sendOtp()}
                   className="min-h-touch cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white disabled:opacity-60"
                 >
-                  {busy ? "भेज रहे हैं…" : "कोड भेजें"}
+                  {busy ? "भेज रहे हैं…" : "लिंक / कोड भेजें"}
                 </motion.button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
+                <p className="font-hindi text-sm leading-relaxed text-sakhi-ink">
+                  ईमेल में <strong>लिंक</strong> हो तो उसी फ़ोन पर टैप करें —
+                  साइन-इन अपने आप हो जाएगा।
+                </p>
                 <label className="font-hindi text-sm font-medium text-sakhi-ink">
-                  ६ अंकों का कोड
+                  या कोड लिखें (६–१० अंक)
                   <input
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     value={otp}
                     onChange={(e) =>
-                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 10))
                     }
                     placeholder="••••••"
-                    className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-center font-display text-2xl tracking-[0.3em] text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
+                    className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-center font-sans text-2xl tracking-[0.3em] text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
                   />
                 </label>
                 <motion.button
