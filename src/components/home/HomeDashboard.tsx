@@ -13,8 +13,14 @@ import { useProgressSync } from "@/hooks/useProgressSync";
 const spring = { type: "spring" as const, stiffness: 380, damping: 26 };
 
 export function HomeDashboard() {
-  const { progress, isSynced, refreshLocal, pushAndPull, userEmail } =
-    useProgressSync();
+  const {
+    progress,
+    isSynced,
+    refreshLocal,
+    pushAndPull,
+    userEmail,
+    signOut,
+  } = useProgressSync();
   const [syncOpen, setSyncOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [statusHi, setStatusHi] = useState<string | null>(null);
@@ -141,6 +147,13 @@ export function HomeDashboard() {
         open={syncOpen}
         onClose={() => setSyncOpen(false)}
         onSynced={() => void handleSynced()}
+        isSynced={isSynced}
+        userEmail={userEmail}
+        onSignOut={signOut}
+        onSignedOut={() => {
+          setStatusHi("क्लाउड बंद हो गया। इस फ़ोन की प्रगति सुरक्षित है।");
+          refreshLocal();
+        }}
       />
     </div>
   );

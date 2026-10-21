@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Cloud, X } from "lucide-react";
+import { Cloud, CloudOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -9,9 +9,14 @@ interface SyncModalProps {
   open: boolean;
   onClose: () => void;
   onSynced: () => void;
+  onSignedOut?: () => void;
+  /** When already signed in, show manage/disconnect instead of email form. */
+  isSynced?: boolean;
+  userEmail?: string | null;
+  onSignOut?: () => Promise<void>;
 }
 
-type Step = "email" | "otp";
+type Step = "email" | "otp" | "connected";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 28 };
 
@@ -21,40 +26,50 @@ function authRedirectTo(): string {
 }
 
 /**
- * Passwordless email auth (OTP code and/or magic link, per Supabase template).
+ * Passwordless email auth (OTP / magic link) + disconnect (logout) when synced.
  */
-export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
+export function SyncModal({
+  open,
+  onClose,
+  onSynced,
+  onSignedOut,
+  isSynced = false,
+  userEmail = null,
+  onSignOut,
+}: SyncModalProps) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
   const [messageHi, setMessageHi] = useState<string | null>(null);
 
-  // If user opens the magic link, session appears — finish sync.
   useEffect(() => {
     if (!open) return;
+    setMessageHi(null);
+    if (isSynced) {
+      setStep("connected");
+      return;
+    }
+    setStep("email");
+  }, [open, isSynced]);
+
+  // Magic-link return: session appears while waiting for OTP.
+  useEffect(() => {
+    if (!open || isSynced) return;
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        onSynced();
-        onClose();
-      }
-    });
-
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+      if (session && event === "SIGNED_IN") {
         onSynced();
-        onClose();
-        setStep("email");
+        setStep("connected");
         setOtp("");
-        setMessageHi(null);
+        setMessageHi("क्लाउड से जुड़ गए।");
       }
     });
 
     return () => sub.subscription.unsubscribe();
-  }, [open, onClose, onSynced]);
+  }, [open, isSynced, onSynced]);
 
   async function sendOtp() {
     const supabase = getSupabaseBrowserClient();
@@ -117,10 +132,25 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
     }
 
     onSynced();
-    onClose();
-    setStep("email");
+    setStep("connected");
     setOtp("");
+    setMessageHi("क्लाउड से जुड़ गए।");
+  }
+
+  async function handleSignOut() {
+    if (!onSignOut) return;
+    setBusy(true);
     setMessageHi(null);
+    try {
+      await onSignOut();
+      setStep("email");
+      setEmail("");
+      setOtp("");
+      setMessageHi("क्लाउड बंद हो गया। इस फ़ोन की प्रगति सुरक्षित है।");
+      onSignedOut?.();
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -149,7 +179,9 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
                   id="sync-modal-title"
                   className="font-hindi text-lg font-semibold text-sakhi-ink"
                 >
-                  प्रगति सुरक्षित करें
+                  {step === "connected"
+                    ? "क्लाउड सिंक"
+                    : "प्रगति सुरक्षित करें"}
                 </h2>
               </div>
               <button
@@ -162,76 +194,108 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
               </button>
             </div>
 
-            <p className="mb-4 font-hindi text-sm leading-relaxed text-sakhi-muted">
-              पासवर्ड नहीं लगेगा। ईमेल में लिंक या कोड आएगा — टैप करें या कोड
-              लिखें।
-            </p>
-
-            {step === "email" ? (
-              <div className="flex flex-col gap-3">
-                <label className="font-hindi text-sm font-medium text-sakhi-ink">
-                  ईमेल
-                  <input
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="aapka@email.com"
-                    className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-base text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
-                  />
-                </label>
+            {step === "connected" ? (
+              <div className="flex flex-col gap-4">
+                <p className="font-hindi text-sm leading-relaxed text-sakhi-muted">
+                  आप क्लाउड से जुड़े हैं। प्रगति दूसरे फ़ोन पर भी मिल सकती है।
+                </p>
+                {userEmail && (
+                  <p className="rounded-2xl bg-sakhi-emerald-soft px-4 py-3 font-sans text-sm text-emerald-900 ring-1 ring-sakhi-emerald/20">
+                    {userEmail}
+                  </p>
+                )}
+                <p className="font-hindi text-sm text-sakhi-muted">
+                  क्लाउड बंद करने पर इस फ़ोन की प्रगति मिटेगी नहीं — सिर्फ़
+                  खाता अलग हो जाएगा।
+                </p>
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.97 }}
-                  disabled={busy}
-                  onClick={() => void sendOtp()}
-                  className="min-h-touch cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white disabled:opacity-60"
+                  disabled={busy || !onSignOut}
+                  onClick={() => void handleSignOut()}
+                  className="flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-2xl bg-white font-hindi text-base font-semibold text-sakhi-ink ring-1 ring-stone-300 disabled:opacity-60"
                 >
-                  {busy ? "भेज रहे हैं…" : "लिंक / कोड भेजें"}
+                  <CloudOff className="h-5 w-5 text-sakhi-muted" aria-hidden />
+                  {busy ? "बंद हो रहा है…" : "क्लाउड बंद करें"}
                 </motion.button>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
-                <p className="font-hindi text-sm leading-relaxed text-sakhi-ink">
-                  ईमेल में <strong>लिंक</strong> हो तो उसी फ़ोन पर टैप करें —
-                  साइन-इन अपने आप हो जाएगा।
+              <>
+                <p className="mb-4 font-hindi text-sm leading-relaxed text-sakhi-muted">
+                  पासवर्ड नहीं लगेगा। ईमेल में लिंक या कोड आएगा — टैप करें या
+                  कोड लिखें।
                 </p>
-                <label className="font-hindi text-sm font-medium text-sakhi-ink">
-                  या कोड लिखें (६–१० अंक)
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={otp}
-                    onChange={(e) =>
-                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 10))
-                    }
-                    placeholder="••••••"
-                    className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-center font-sans text-2xl tracking-[0.3em] text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
-                  />
-                </label>
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.97 }}
-                  disabled={busy}
-                  onClick={() => void verifyOtp()}
-                  className="min-h-touch cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white disabled:opacity-60"
-                >
-                  {busy ? "जाँच हो रही है…" : "पुष्टि करें"}
-                </motion.button>
-                <button
-                  type="button"
-                  onClick={() => setStep("email")}
-                  className="min-h-touch cursor-pointer font-hindi text-sm text-sakhi-muted underline"
-                >
-                  ईमेल बदलें
-                </button>
-              </div>
+
+                {step === "email" ? (
+                  <div className="flex flex-col gap-3">
+                    <label className="font-hindi text-sm font-medium text-sakhi-ink">
+                      ईमेल
+                      <input
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="aapka@email.com"
+                        className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-base text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
+                      />
+                    </label>
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.97 }}
+                      disabled={busy}
+                      onClick={() => void sendOtp()}
+                      className="min-h-touch cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white disabled:opacity-60"
+                    >
+                      {busy ? "भेज रहे हैं…" : "लिंक / कोड भेजें"}
+                    </motion.button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <p className="font-hindi text-sm leading-relaxed text-sakhi-ink">
+                      ईमेल में <strong>लिंक</strong> हो तो उसी फ़ोन पर टैप करें
+                      — साइन-इन अपने आप हो जाएगा।
+                    </p>
+                    <label className="font-hindi text-sm font-medium text-sakhi-ink">
+                      या कोड लिखें (६–१० अंक)
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        value={otp}
+                        onChange={(e) =>
+                          setOtp(e.target.value.replace(/\D/g, "").slice(0, 10))
+                        }
+                        placeholder="••••••"
+                        className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-center font-sans text-2xl tracking-[0.3em] text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
+                      />
+                    </label>
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.97 }}
+                      disabled={busy}
+                      onClick={() => void verifyOtp()}
+                      className="min-h-touch cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white disabled:opacity-60"
+                    >
+                      {busy ? "जाँच हो रही है…" : "पुष्टि करें"}
+                    </motion.button>
+                    <button
+                      type="button"
+                      onClick={() => setStep("email")}
+                      className="min-h-touch cursor-pointer font-hindi text-sm text-sakhi-muted underline"
+                    >
+                      ईमेल बदलें
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {messageHi && (
-              <p className="mt-3 font-hindi text-sm text-sakhi-amber" role="status">
+              <p
+                className="mt-3 font-hindi text-sm text-sakhi-amber"
+                role="status"
+              >
                 {messageHi}
               </p>
             )}

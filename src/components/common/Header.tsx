@@ -46,7 +46,9 @@ export function Header({ streak, isSynced, onSyncClick }: HeaderProps) {
         <button
           type="button"
           onClick={onSyncClick}
-          aria-label={isSynced ? "क्लाउड सिंक हुआ" : "क्लाउड सिंक खोलें"}
+          aria-label={
+            isSynced ? "क्लाउड सिंक — खाता देखें या बंद करें" : "क्लाउड सिंक खोलें"
+          }
           className={`inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-full ring-1 ${
             isSynced
               ? "bg-sakhi-emerald-soft text-sakhi-emerald ring-sakhi-emerald/30"
