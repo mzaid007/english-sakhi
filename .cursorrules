@@ -1,0 +1,61 @@
+# Project: English Sakhi (इंग्लिश सखी)
+# An Open-Source, Audio-First Micro-Learning Platform for Hindi-Medium Homemakers & Mothers
+
+## 1. Target Learner Persona & UX Constraints
+- Target Audience: Mothers/housewives with Hindi-medium background, low English reading literacy, operating with 5–10 minutes of fragmented free time.
+- Device Context: Mobile-first viewport (Android Chrome / PWA). Responsive between 360px and 430px viewports.
+- Zero Typing Principle: Never require the user to type on an English keyboard. Use tap-to-select, swappable word pills, binary choices, or voice input.
+- Audio-First Interface:
+  - Every English sentence, phrase, or option MUST have an immediate audio playback trigger.
+  - Default TTS: Use Web Speech API (`window.speechSynthesis`) with `lang: 'en-IN'` and speed rates (`0.85x` default, `0.7x` slow/turtle mode).
+- Dual-Script Scaffolding:
+  - Always display both Devanagari phonetics (e.g., आरव इज़ स्टडीइंग) and clear Hindi meaning (e.g., आरव पढ़ाई कर रहा है) alongside English text.
+- Touch Target Law: All clickable elements, audio buttons, and word pills MUST have a minimum tap area of 48px × 48px to accommodate one-handed mobile use.
+- Dignity & Tone: Never display negative symbols (red 'X', "Wrong", "Incorrect"). Use warm, encouraging Hindi prompts (e.g., "बहुत बढ़िया कोशिश! एक बार ऐसे सुनकर दोहराएं").
+
+## 2. Pedagogical & Grammar Rules (No Academic Jargon)
+- Banned Terms in UI/Content: Do NOT use terms like "Present Continuous", "Gerund", "Auxiliary Verb", "Subject-Predicate", or "Preposition".
+- Visual Pattern Equivalents:
+  - In-progress actions (-ing) ➔ ⏰ "काम जारी है"
+  - Daily routine/habits (base verb) ➔ 📅 "रोज़ की आदत"
+  - Completed actions (has/have/did) ➔ ⏳ "काम पूरा हो चुका"
+  - Polite requests (Can/Could/Please) ➔ 🌸 "तहज़ीब और ज़रूरत"
+- Sentence Architecture (The "English Sakhi" SVO Frame):
+  - Use visual color-coded block schemas:
+    - 🟡 Yellow pill: Who (कौन? - e.g., I, She, Doctor)
+    - 🟢 Green pill: Action (क्या काम? - e.g., is cooking, needs)
+    - 🔵 Blue pill: What/Where (कहाँ / क्या? - e.g., tea, to school)
+- Rapidex & Wren/Martin Blend:
+  - Rapidex influence: Provide Devanagari transliteration with clean stress points (e.g., वेजिटेबल ➔ वेज-ट-बल).
+  - Wren & Martin influence: Use substitution tables for sentence building instead of memorizing abstract definitions.
+
+## 3. Visual System: "Modern Indian Warmth"
+- Palette:
+  - Background: Warm Sand/Cream (`bg-[#FAF8F5]` / `bg-stone-50`).
+  - Primary Brand: Warm Emerald (`emerald-600`) and Saffron/Amber accents (`amber-500`).
+  - Dark elements: Soft deep stone (`text-stone-800`), avoiding harsh pure black (`#000000`).
+- Micro-interactions:
+  - Tactile spring taps (`whileTap={{ scale: 0.95 }}`) on all audio buttons and choice pills via Framer Motion.
+  - Floating celebration tokens (sparkles/diyas) on completing micro-missions.
+
+## 4. Offline-First & Free Cloud Sync Architecture
+- Local Storage First:
+  - All progress (current day, completed lessons, streaks) must write to `localStorage` immediately with zero login barriers on Day 1.
+- Supabase Integration (Free Tier):
+  - Passwordless Magic Link / OTP via email (`supabase.auth.signInWithOtp`). Never force passwords.
+  - Merging cloud & local uses union of completed lessons and `Math.max()` on streaks. Never wipe offline data.
+
+## 5. Technology Stack & Coding Standards
+- Framework: Next.js 14+ (App Router), TypeScript, React 19+.
+- Styling: Tailwind CSS (Mobile-first utility classes, pastel warm palette: `amber-50`, `emerald-600`, `rose-100`).
+- Icons: `lucide-react` (Volume2, Turtle, Sparkles, Check, RotateCcw, Mic, Cloud).
+- AI Integrations (Open / Free Tier):
+  - LLM: Google Gemini Flash (`@google/genai`) or Groq Llama-3.3-70B for real-time speech evaluation and conversational drills.
+  - Return all AI evaluation outputs in structured JSON with warm Hindi guidance.
+  - Speech Recognition: Web Speech API (`webkitSpeechRecognition`) with fallback to Groq Whisper (`whisper-large-v3`).
+
+## 6. Cursor Generation Directives
+- When generating lesson data, use the standardized schema with `en`, `hi`, `phonetic_hi`, and visual syntax blocks.
+- When creating UI components, always provide an accessible play button and ensure full responsiveness on 360px–420px mobile screens.
+- Do not add complex authentication dependencies (NextAuth/Clerk); keep auth strictly scoped to Supabase OTP.
+- Never output bare technical errors to the UI; wrap all async operations in graceful Hindi fallback states.

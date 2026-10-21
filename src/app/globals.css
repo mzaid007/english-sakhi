@@ -1,26 +1,72 @@
 @import "tailwindcss";
 
+/* Modern Indian Warmth — Tailwind v4 theme (mirror: tailwind.config.ts sakhiTokens). */
+@theme {
+  --color-cream: #faf8f5;
+  --color-surface: #f5f2eb;
+  --color-sakhi-emerald: #059669;
+  --color-sakhi-emerald-soft: #d1fae5;
+  --color-sakhi-amber: #d97706;
+  --color-sakhi-amber-soft: #fef3c7;
+  --color-sakhi-coral: #e11d48;
+  --color-sakhi-ink: #292524;
+  --color-sakhi-muted: #78716c;
+  --color-who: #fbbf24;
+  --color-who-soft: #fef3c7;
+  --color-action: #059669;
+  --color-action-soft: #d1fae5;
+  --color-where: #3b82f6;
+  --color-where-soft: #dbeafe;
+
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  --font-hindi: var(--font-noto-devanagari), "Noto Sans Devanagari", sans-serif;
+
+  --shadow-soft: 0 8px 24px -8px rgb(41 37 36 / 0.12);
+  --shadow-pill: 0 2px 8px -2px rgb(5 150 105 / 0.25);
+
+  --spacing-touch: 48px;
+  --min-height-touch: 48px;
+  --min-width-touch: 48px;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f5;
+  --foreground: #292524;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  touch-action: manipulation;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Soft saffron / emerald wash — atmosphere without flat cream */
+.sakhi-backdrop {
+  background-color: #faf8f5;
+  background-image:
+    radial-gradient(
+      ellipse 120% 80% at 50% -20%,
+      rgb(254 243 199 / 0.65),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 100% 100%,
+      rgb(209 250 229 / 0.45),
+      transparent 50%
+    );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
