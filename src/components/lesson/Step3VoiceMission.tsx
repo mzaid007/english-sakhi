@@ -116,7 +116,7 @@ export function Step3VoiceMission({
       </div>
 
       {recognition.transcript && (
-        <p className="rounded-2xl bg-surface px-4 py-3 font-display text-base text-sakhi-ink ring-1 ring-stone-200/60">
+        <p className="rounded-2xl bg-surface px-4 py-3 font-sans text-base text-sakhi-ink ring-1 ring-stone-200/60">
           <span className="font-hindi text-xs text-sakhi-muted">आपने कहा: </span>
           {recognition.transcript}
         </p>

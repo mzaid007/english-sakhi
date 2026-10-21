@@ -145,7 +145,7 @@ export function SubstitutionCard({
                   {action.emoji}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="font-display text-base font-semibold leading-snug">
+                  <span className="font-sans text-base font-semibold leading-snug">
                     {action.en}
                   </span>
                   <span

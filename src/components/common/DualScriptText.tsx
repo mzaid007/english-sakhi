@@ -43,7 +43,7 @@ function DualScriptBody({
     <div className={`flex flex-col gap-2 ${className}`}>
       <div className="flex items-start gap-3">
         <p
-          className={`${enSize} font-display font-semibold leading-snug tracking-tight text-sakhi-ink`}
+          className={`${enSize} font-sans font-semibold leading-snug tracking-tight text-sakhi-ink`}
           lang="en"
         >
           {en}

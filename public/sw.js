@@ -1,6 +1,13 @@
 /* English Sakhi — offline shell cache */
-const CACHE = "english-sakhi-v1";
-const PRECACHE = ["/", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
+const CACHE = "english-sakhi-v2";
+const PRECACHE = [
+  "/",
+  "/manifest.json",
+  "/favicon.ico",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/icons/logo.svg",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
