@@ -1,5 +1,14 @@
 # English Sakhi (इंग्लिश सखी)
 
+[![Live Demo](https://img.shields.io/badge/demo-english--sakhi.vercel.app-059669?style=flat-square&logo=vercel&logoColor=white)](https://english-sakhi.vercel.app/)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg?style=flat-square)](./LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth%20%26%20DB-3FCF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
+[![PWA](https://img.shields.io/badge/PWA-ready-5A0FC8?style=flat-square&logo=pwa&logoColor=white)](https://english-sakhi.vercel.app/)
+[![GitHub](https://img.shields.io/badge/GitHub-mzaid007%2Fenglish--sakhi-181717?style=flat-square&logo=github)](https://github.com/mzaid007/english-sakhi)
+
 Open-source, audio-first English micro-learning for Hindi-medium homemakers and mothers.
 
 **Live app:** [https://english-sakhi.vercel.app/](https://english-sakhi.vercel.app/)
