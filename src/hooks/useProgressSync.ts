@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   emptyProgress,
   mergeProgress,
@@ -16,6 +16,7 @@ export interface UseProgressSyncResult {
   isSynced: boolean;
   isSyncing: boolean;
   userEmail: string | null;
+  lastSyncMessageHi: string | null;
   refreshLocal: () => void;
   pushAndPull: () => Promise<{ ok: boolean; message_hi: string }>;
   signOut: () => Promise<void>;
@@ -26,28 +27,14 @@ export function useProgressSync(): UseProgressSyncResult {
   const [isSynced, setIsSynced] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [lastSyncMessageHi, setLastSyncMessageHi] = useState<string | null>(
+    null,
+  );
+  const mergedOnSignIn = useRef(false);
 
   const refreshLocal = useCallback(() => {
     setProgress(readProgress());
   }, []);
-
-  useEffect(() => {
-    refreshLocal();
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-
-    void supabase.auth.getSession().then(({ data }) => {
-      setUserEmail(data.session?.user.email ?? null);
-      setIsSynced(Boolean(data.session));
-    });
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user.email ?? null);
-      setIsSynced(Boolean(session));
-    });
-
-    return () => sub.subscription.unsubscribe();
-  }, [refreshLocal]);
 
   const pushAndPull = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -87,10 +74,7 @@ export function useProgressSync(): UseProgressSyncResult {
         };
       }
 
-      const cloud = remote
-        ? progressFromCloud(remote)
-        : emptyProgress();
-
+      const cloud = remote ? progressFromCloud(remote) : emptyProgress();
       const merged = mergeProgress(local, cloud);
       writeProgress(merged);
       setProgress(merged);
@@ -123,12 +107,46 @@ export function useProgressSync(): UseProgressSyncResult {
     }
   }, []);
 
+  useEffect(() => {
+    refreshLocal();
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    async function syncAfterAuth() {
+      if (mergedOnSignIn.current) return;
+      mergedOnSignIn.current = true;
+      const result = await pushAndPull();
+      setLastSyncMessageHi(result.message_hi);
+    }
+
+    void supabase.auth.getSession().then(({ data }) => {
+      setUserEmail(data.session?.user.email ?? null);
+      setIsSynced(Boolean(data.session));
+      if (data.session) void syncAfterAuth();
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      setUserEmail(session?.user.email ?? null);
+      setIsSynced(Boolean(session));
+      if (event === "SIGNED_IN" && session) {
+        mergedOnSignIn.current = false;
+        void syncAfterAuth();
+      }
+      if (event === "SIGNED_OUT") {
+        mergedOnSignIn.current = false;
+      }
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, [refreshLocal, pushAndPull]);
+
   const signOut = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
     await supabase.auth.signOut();
     setIsSynced(false);
     setUserEmail(null);
+    mergedOnSignIn.current = false;
   }, []);
 
   return {
@@ -136,6 +154,7 @@ export function useProgressSync(): UseProgressSyncResult {
     isSynced,
     isSyncing,
     userEmail,
+    lastSyncMessageHi,
     refreshLocal,
     pushAndPull,
     signOut,

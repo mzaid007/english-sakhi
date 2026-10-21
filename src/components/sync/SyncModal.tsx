@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Cloud, CloudOff, X } from "lucide-react";
+import { Cloud, CloudOff, Mail, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -10,13 +10,12 @@ interface SyncModalProps {
   onClose: () => void;
   onSynced: () => void;
   onSignedOut?: () => void;
-  /** When already signed in, show manage/disconnect instead of email form. */
   isSynced?: boolean;
   userEmail?: string | null;
   onSignOut?: () => Promise<void>;
 }
 
-type Step = "email" | "otp" | "connected";
+type Step = "email" | "checkEmail" | "connected";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 28 };
 
@@ -26,7 +25,8 @@ function authRedirectTo(): string {
 }
 
 /**
- * Passwordless email auth (OTP / magic link) + disconnect (logout) when synced.
+ * Passwordless sync via email magic link (default Supabase mailer — no custom SMTP).
+ * Digit OTP needs a custom email template, which requires SMTP; we don't use that path.
  */
 export function SyncModal({
   open,
@@ -39,7 +39,6 @@ export function SyncModal({
 }: SyncModalProps) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
   const [messageHi, setMessageHi] = useState<string | null>(null);
 
@@ -53,7 +52,6 @@ export function SyncModal({
     setStep("email");
   }, [open, isSynced]);
 
-  // Magic-link return: session appears while waiting for OTP.
   useEffect(() => {
     if (!open || isSynced) return;
     const supabase = getSupabaseBrowserClient();
@@ -63,7 +61,6 @@ export function SyncModal({
       if (session && event === "SIGNED_IN") {
         onSynced();
         setStep("connected");
-        setOtp("");
         setMessageHi("क्लाउड से जुड़ गए।");
       }
     });
@@ -71,7 +68,7 @@ export function SyncModal({
     return () => sub.subscription.unsubscribe();
   }, [open, isSynced, onSynced]);
 
-  async function sendOtp() {
+  async function sendMagicLink() {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) {
       setMessageHi(
@@ -97,44 +94,12 @@ export function SyncModal({
     setBusy(false);
 
     if (error) {
-      setMessageHi("कोड भेजने में समस्या हुई — बाद में कोशिश करें।");
+      setMessageHi("ईमेल भेजने में समस्या हुई — बाद में कोशिश करें।");
       return;
     }
 
-    setStep("otp");
-    setMessageHi(
-      "ईमेल खोलें: लिंक पर टैप करें, या अगर कोड दिखे तो यहाँ लिखें।",
-    );
-  }
-
-  async function verifyOtp() {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-
-    const code = otp.trim();
-    if (code.length < 6) {
-      setMessageHi("कोड कम से कम ६ अंक का होना चाहिए।");
-      return;
-    }
-
-    setBusy(true);
+    setStep("checkEmail");
     setMessageHi(null);
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim().toLowerCase(),
-      token: code,
-      type: "email",
-    });
-    setBusy(false);
-
-    if (error) {
-      setMessageHi("कोड मिला नहीं — दोबारा जाँचें।");
-      return;
-    }
-
-    onSynced();
-    setStep("connected");
-    setOtp("");
-    setMessageHi("क्लाउड से जुड़ गए।");
   }
 
   async function handleSignOut() {
@@ -145,7 +110,6 @@ export function SyncModal({
       await onSignOut();
       setStep("email");
       setEmail("");
-      setOtp("");
       setMessageHi("क्लाउड बंद हो गया। इस फ़ोन की प्रगति सुरक्षित है।");
       onSignedOut?.();
     } finally {
@@ -219,76 +183,66 @@ export function SyncModal({
                   {busy ? "बंद हो रहा है…" : "क्लाउड बंद करें"}
                 </motion.button>
               </div>
-            ) : (
-              <>
-                <p className="mb-4 font-hindi text-sm leading-relaxed text-sakhi-muted">
-                  पासवर्ड नहीं लगेगा। ईमेल में लिंक या कोड आएगा — टैप करें या
-                  कोड लिखें।
+            ) : step === "email" ? (
+              <div className="flex flex-col gap-3">
+                <p className="font-hindi text-sm leading-relaxed text-sakhi-muted">
+                  पासवर्ड नहीं लगेगा। हम ईमेल पर एक <strong>साइन-इन लिंक</strong>{" "}
+                  भेजेंगे — उसी फ़ोन पर टैप करें।
                 </p>
-
-                {step === "email" ? (
-                  <div className="flex flex-col gap-3">
-                    <label className="font-hindi text-sm font-medium text-sakhi-ink">
-                      ईमेल
-                      <input
-                        type="email"
-                        inputMode="email"
-                        autoComplete="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="aapka@email.com"
-                        className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-base text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
-                      />
-                    </label>
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.97 }}
-                      disabled={busy}
-                      onClick={() => void sendOtp()}
-                      className="min-h-touch cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white disabled:opacity-60"
-                    >
-                      {busy ? "भेज रहे हैं…" : "लिंक / कोड भेजें"}
-                    </motion.button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <p className="font-hindi text-sm leading-relaxed text-sakhi-ink">
-                      ईमेल में <strong>लिंक</strong> हो तो उसी फ़ोन पर टैप करें
-                      — साइन-इन अपने आप हो जाएगा।
-                    </p>
-                    <label className="font-hindi text-sm font-medium text-sakhi-ink">
-                      या कोड लिखें (६–१० अंक)
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        value={otp}
-                        onChange={(e) =>
-                          setOtp(e.target.value.replace(/\D/g, "").slice(0, 10))
-                        }
-                        placeholder="••••••"
-                        className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-center font-sans text-2xl tracking-[0.3em] text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
-                      />
-                    </label>
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.97 }}
-                      disabled={busy}
-                      onClick={() => void verifyOtp()}
-                      className="min-h-touch cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white disabled:opacity-60"
-                    >
-                      {busy ? "जाँच हो रही है…" : "पुष्टि करें"}
-                    </motion.button>
-                    <button
-                      type="button"
-                      onClick={() => setStep("email")}
-                      className="min-h-touch cursor-pointer font-hindi text-sm text-sakhi-muted underline"
-                    >
-                      ईमेल बदलें
-                    </button>
-                  </div>
-                )}
-              </>
+                <label className="font-hindi text-sm font-medium text-sakhi-ink">
+                  ईमेल
+                  <input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="aapka@email.com"
+                    className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-base text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
+                  />
+                </label>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.97 }}
+                  disabled={busy}
+                  onClick={() => void sendMagicLink()}
+                  className="min-h-touch cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white disabled:opacity-60"
+                >
+                  {busy ? "भेज रहे हैं…" : "साइन-इन लिंक भेजें"}
+                </motion.button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4 py-2 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-sakhi-emerald-soft text-sakhi-emerald">
+                  <Mail className="h-7 w-7" aria-hidden />
+                </div>
+                <p className="font-hindi text-base font-semibold text-sakhi-ink">
+                  ईमेल खोलें
+                </p>
+                <p className="font-hindi text-sm leading-relaxed text-sakhi-muted">
+                  <span className="font-sans text-sakhi-ink">{email}</span>
+                  <br />
+                  पर <strong>Sign in</strong> लिंक टैप करें। उसी ब्राउज़र में
+                  वापस आएँ — सिंक अपने आप हो जाएगा।
+                </p>
+                <p className="font-hindi text-xs text-sakhi-muted">
+                  स्पैम फ़ोल्डर भी देख लें। लिंक कुछ समय में खत्म हो जाता है।
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStep("email")}
+                  className="min-h-touch cursor-pointer font-hindi text-sm text-sakhi-muted underline"
+                >
+                  ईमेल बदलें
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="min-h-touch w-full cursor-pointer rounded-2xl bg-sakhi-emerald font-hindi text-base font-semibold text-white"
+                >
+                  समझ गई — ईमेल खोलूँगी
+                </button>
+              </div>
             )}
 
             {messageHi && (

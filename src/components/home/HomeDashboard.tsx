@@ -20,6 +20,7 @@ export function HomeDashboard() {
     pushAndPull,
     userEmail,
     signOut,
+    lastSyncMessageHi,
   } = useProgressSync();
   const [syncOpen, setSyncOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -29,6 +30,10 @@ export function HomeDashboard() {
     refreshLocal();
     setHydrated(true);
   }, [refreshLocal]);
+
+  useEffect(() => {
+    if (lastSyncMessageHi) setStatusHi(lastSyncMessageHi);
+  }, [lastSyncMessageHi]);
 
   async function handleSynced() {
     const result = await pushAndPull();
