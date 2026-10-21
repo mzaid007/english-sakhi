@@ -1,20 +1,22 @@
 /**
- * Central env accessors. Missing keys return undefined so Day 1
- * (local-only, no login) still runs; Phase 2/3 features check before use.
+ * Central env accessors.
+ * NEXT_PUBLIC_* must use static `process.env.NEXT_PUBLIC_…` access so Next.js
+ * can inline them into the client bundle at build time. Dynamic `process.env[name]`
+ * breaks production (keys look "missing" even when set on Vercel).
  */
 
-function read(name: string): string | undefined {
-  const value = process.env[name]?.trim();
-  return value ? value : undefined;
+function trim(value: string | undefined): string | undefined {
+  const v = value?.trim();
+  return v ? v : undefined;
 }
 
 export const env = {
-  supabaseUrl: read("NEXT_PUBLIC_SUPABASE_URL"),
-  supabaseAnonKey: read("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  supabaseUrl: trim(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  supabaseAnonKey: trim(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
   /** Server-only. Never expose to the client bundle. */
-  supabaseServiceRoleKey: read("SUPABASE_SERVICE_ROLE_KEY"),
-  geminiApiKey: read("GEMINI_API_KEY"),
-  groqApiKey: read("GROQ_API_KEY"),
+  supabaseServiceRoleKey: trim(process.env.SUPABASE_SERVICE_ROLE_KEY),
+  geminiApiKey: trim(process.env.GEMINI_API_KEY),
+  groqApiKey: trim(process.env.GROQ_API_KEY),
 } as const;
 
 export function hasSupabasePublicConfig(): boolean {

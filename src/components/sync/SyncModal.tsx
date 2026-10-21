@@ -29,7 +29,9 @@ export function SyncModal({ open, onClose, onSynced }: SyncModalProps) {
   async function sendOtp() {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) {
-      setMessageHi("सुपाबेस कुंजी अभी सेट नहीं है।");
+      setMessageHi(
+        "क्लाउड कुंजी नहीं मिली। Vercel पर NEXT_PUBLIC_SUPABASE_URL और NEXT_PUBLIC_SUPABASE_ANON_KEY सेट कर Redeploy करें।",
+      );
       return;
     }
     const trimmed = email.trim().toLowerCase();
