@@ -1,5 +1,4 @@
-import { ContinueButton } from "@/components/lesson/ContinueButton";
-import { SubstitutionCard } from "@/components/lesson/SubstitutionCard";
+import { Day1Lesson } from "@/components/lesson/Day1Lesson";
 import { day1Substitution } from "@/data/day1";
 
 /**
@@ -66,9 +65,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          <main className="flex flex-1 flex-col gap-6">
-            <SubstitutionCard />
-            <ContinueButton />
+          <main className="flex flex-1 flex-col">
+            <Day1Lesson />
           </main>
         </div>
       </div>
