@@ -32,6 +32,11 @@ export function SubstitutionCard({
   const [selectedId, setSelectedId] = useState(lesson.defaultActionId);
   const didAutoSpeak = useRef(false);
 
+  useEffect(() => {
+    setSelectedId(lesson.defaultActionId);
+    didAutoSpeak.current = false;
+  }, [lesson.id, lesson.defaultActionId]);
+
   const selected =
     lesson.actions.find((a) => a.id === selectedId) ?? lesson.actions[0];
   const sentence = buildSentence(lesson.subject, selected);

@@ -1,12 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { RotateCcw, Sparkles } from "lucide-react";
+import { Home, RotateCcw, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { useEffect } from "react";
+import { playCelebrationChime } from "@/lib/chime";
 
 interface MissionCompleteProps {
   day: number;
   titleHi: string;
   onPracticeAgain: () => void;
+  homeHref?: string;
 }
 
 const spring = { type: "spring" as const, stiffness: 380, damping: 24 };
@@ -15,7 +19,12 @@ export function MissionComplete({
   day,
   titleHi,
   onPracticeAgain,
+  homeHref = "/",
 }: MissionCompleteProps) {
+  useEffect(() => {
+    playCelebrationChime();
+  }, []);
+
   return (
     <motion.section
       role="status"
@@ -40,10 +49,10 @@ export function MissionComplete({
           बहुत बढ़िया!
         </p>
         <p className="font-hindi text-base leading-relaxed text-sakhi-ink/90">
-          दिन {day} का छोटा मिशन पूरा हो गया — {titleHi}।
+          दिन {day} का मिशन पूरा — {titleHi}।
         </p>
         <p className="font-hindi text-sm text-sakhi-muted">
-          आपकी प्रगति इस फ़ोन पर सुरक्षित है। कल फिर मिलते हैं।
+          प्रगति इस फ़ोन पर सुरक्षित है। कल फिर मिलते हैं।
         </p>
       </div>
 
@@ -57,6 +66,14 @@ export function MissionComplete({
         <RotateCcw className="h-5 w-5" aria-hidden />
         एक बार और अभ्यास करें
       </motion.button>
+
+      <Link
+        href={homeHref}
+        className="flex min-h-touch w-full items-center justify-center gap-2 rounded-2xl bg-sakhi-emerald px-5 py-3 font-hindi text-base font-semibold text-white"
+      >
+        <Home className="h-5 w-5" aria-hidden />
+        होम पर जाएँ
+      </Link>
     </motion.section>
   );
 }
