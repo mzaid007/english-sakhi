@@ -1,42 +1,28 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 import { env, hasGemini, hasGroq } from "@/lib/env";
+import { speechMatchesTarget } from "@/lib/speakMatch";
 import type { SpeakEvalResult } from "@/lib/types";
 
-const FALLBACK: SpeakEvalResult = {
+const MATCH: SpeakEvalResult = {
   understood: true,
-  praise_hi: "बहुत बढ़िया कोशिश! एक बार ऐसे सुनकर दोहराएँ।",
-  tip_hi: "धीरे-धीरे बोलें — हर शब्द साफ़।",
+  praise_hi: "वाह! आपने बहुत अच्छा बोला।",
+  tip_hi: "इसी तरह रोज़ थोड़ा अभ्यास जारी रखें।",
   model_en: "",
 };
 
-function offlineEval(transcript: string, targetEn: string): SpeakEvalResult {
-  const norm = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  const t = norm(transcript);
-  const target = norm(targetEn);
-  const words = target.split(" ").filter(Boolean);
-  const hits = words.filter((w) => t.includes(w)).length;
-  const ratio = words.length ? hits / words.length : 0;
-  const understood = ratio >= 0.5 || t.includes(target.slice(0, 8));
+const RETRY: SpeakEvalResult = {
+  understood: false,
+  praise_hi: "बहुत बढ़िया कोशिश! एक बार ऐसे सुनकर दोहराएँ।",
+  tip_hi: "मॉडल वाक्य सुनकर वही शब्द धीरे बोलें।",
+  model_en: "",
+};
 
-  return {
-    understood,
-    praise_hi: understood
-      ? "वाह! आपने बहुत अच्छा बोला।"
-      : "बहुत बढ़िया कोशिश! एक बार ऐसे सुनकर दोहराएँ।",
-    tip_hi: understood
-      ? "इसी तरह रोज़ थोड़ा अभ्यास जारी रखें।"
-      : "मॉडल वाक्य सुनकर धीरे दोहराएँ — कोई जल्दी नहीं।",
-    model_en: targetEn,
-  };
+function withModel(result: SpeakEvalResult, modelEn: string): SpeakEvalResult {
+  return { ...result, model_en: modelEn || result.model_en };
 }
 
-async function evalWithGemini(
+async function praiseWithGemini(
   transcript: string,
   targetEn: string,
   targetHi: string,
@@ -44,11 +30,12 @@ async function evalWithGemini(
   const ai = new GoogleGenAI({ apiKey: env.geminiApiKey! });
   const prompt = `You are English Sakhi, a warm Hindi-speaking coach for Indian homemakers learning English.
 Never say गलत, Wrong, Incorrect, or use a red X tone.
-Learner said (speech-to-text, may be imperfect): "${transcript}"
+The learner's words already match the target. Write praise only.
+Learner said: "${transcript}"
 Target English: "${targetEn}"
 Target Hindi meaning: "${targetHi}"
 Return ONLY compact JSON:
-{"understood":boolean,"praise_hi":"warm Hindi praise","tip_hi":"one short Hindi tip","model_en":"natural English phrase to practise"}`;
+{"understood":true,"praise_hi":"warm Hindi praise","tip_hi":"one short Hindi tip","model_en":"${targetEn}"}`;
 
   const response = await ai.models.generateContent({
     model: "gemini-2.0-flash",
@@ -62,14 +49,14 @@ Return ONLY compact JSON:
   const text = response.text?.trim() ?? "";
   const parsed = JSON.parse(text) as SpeakEvalResult;
   return {
-    understood: Boolean(parsed.understood),
-    praise_hi: parsed.praise_hi || FALLBACK.praise_hi,
-    tip_hi: parsed.tip_hi || FALLBACK.tip_hi,
-    model_en: parsed.model_en || targetEn,
+    understood: true,
+    praise_hi: parsed.praise_hi || MATCH.praise_hi,
+    tip_hi: parsed.tip_hi || MATCH.tip_hi,
+    model_en: targetEn,
   };
 }
 
-async function evalWithGroq(
+async function praiseWithGroq(
   transcript: string,
   targetEn: string,
   targetHi: string,
@@ -88,7 +75,7 @@ async function evalWithGroq(
         {
           role: "system",
           content:
-            "Warm Hindi coach for Indian homemakers. Never say Wrong/गलत. JSON only: understood, praise_hi, tip_hi, model_en.",
+            "Warm Hindi coach. The learner already matched the target. Never say Wrong/गलत. JSON only: understood true, praise_hi, tip_hi, model_en.",
         },
         {
           role: "user",
@@ -105,10 +92,10 @@ async function evalWithGroq(
   const content = data.choices?.[0]?.message?.content ?? "{}";
   const parsed = JSON.parse(content) as SpeakEvalResult;
   return {
-    understood: Boolean(parsed.understood),
-    praise_hi: parsed.praise_hi || FALLBACK.praise_hi,
-    tip_hi: parsed.tip_hi || FALLBACK.tip_hi,
-    model_en: parsed.model_en || targetEn,
+    understood: true,
+    praise_hi: parsed.praise_hi || MATCH.praise_hi,
+    tip_hi: parsed.tip_hi || MATCH.tip_hi,
+    model_en: targetEn,
   };
 }
 
@@ -126,32 +113,41 @@ export async function POST(request: Request) {
 
     if (!transcript || !targetEn) {
       return NextResponse.json(
-        { ...FALLBACK, praise_hi: "पहले माइक से बोलें, फिर जाँच करें।" },
-        { status: 200 },
+        withModel(
+          {
+            ...RETRY,
+            praise_hi: "पहले माइक पर टैप करके बोलें, फिर जाँच करें।",
+            tip_hi: "शांत जगह पर पूरा वाक्य बोलें।",
+          },
+          targetEn,
+        ),
       );
+    }
+
+    if (!speechMatchesTarget(transcript, targetEn)) {
+      return NextResponse.json(withModel(RETRY, targetEn));
     }
 
     try {
       if (hasGemini()) {
-        const result = await evalWithGemini(transcript, targetEn, targetHi);
+        const result = await praiseWithGemini(transcript, targetEn, targetHi);
         return NextResponse.json(result);
       }
       if (hasGroq()) {
-        const result = await evalWithGroq(transcript, targetEn, targetHi);
+        const result = await praiseWithGroq(transcript, targetEn, targetHi);
         return NextResponse.json(result);
       }
     } catch {
-      // fall through to offline heuristic
+      // The words already match — praise without the model.
     }
 
-    return NextResponse.json(offlineEval(transcript, targetEn));
+    return NextResponse.json(withModel(MATCH, targetEn));
   } catch {
-    return NextResponse.json(
-      {
-        ...FALLBACK,
-        praise_hi: "अभी जाँच नहीं हो सकी — फिर भी आपकी कोशिश सराहनीय है।",
-      },
-      { status: 200 },
-    );
+    return NextResponse.json({
+      understood: false,
+      praise_hi: "अभी जाँच नहीं हो सकी — फिर से कोशिश करें।",
+      tip_hi: "नेट धीमा हो तो भी वाक्य सुनकर दोहराएँ।",
+      model_en: "",
+    });
   }
 }

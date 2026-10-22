@@ -11,6 +11,8 @@ export type BlockRole = "who" | "action" | "where";
 export interface SyntaxBlock extends DualScript {
   role: BlockRole;
   id: string;
+  /** Short Hindi name for this block, e.g. कौन or सवाल. */
+  frame_hi?: string;
 }
 
 /** Swappable action for substitution tables. */
@@ -18,12 +20,24 @@ export interface ActionOption extends DualScript {
   id: string;
   /** Decorative content emoji on the pill (not a UI icon). */
   emoji: string;
+  /** Full Hindi sentence. Use when word order is not subject + action. */
+  hi_sentence?: string;
+  /** Full Devanagari sound line, when it is not subject + action. */
+  phonetic_sentence_hi?: string;
+  /** Stuck to the English sentence, such as "?". */
+  en_end?: string;
+  /** Speaking-step line that matches this choice. */
+  speak_context_hi?: string;
 }
 
 export interface SubstitutionTable {
   subject: SyntaxBlock;
   actions: ActionOption[];
   defaultActionId: string;
+  /** What the green or blue pills are choosing. */
+  choice_role?: "action" | "what";
+  /** Heading above the pills. */
+  choice_label_hi?: string;
 }
 
 /** @deprecated Prefer LessonDay.substitution — kept for older imports. */

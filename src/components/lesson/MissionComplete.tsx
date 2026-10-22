@@ -9,6 +9,7 @@ import { playCelebrationChime } from "@/lib/chime";
 interface MissionCompleteProps {
   day: number;
   titleHi: string;
+  nextLineHi: string;
   onPracticeAgain: () => void;
   homeHref?: string;
 }
@@ -18,6 +19,7 @@ const spring = { type: "spring" as const, stiffness: 380, damping: 24 };
 export function MissionComplete({
   day,
   titleHi,
+  nextLineHi,
   onPracticeAgain,
   homeHref = "/",
 }: MissionCompleteProps) {
@@ -52,7 +54,7 @@ export function MissionComplete({
           दिन {day} का मिशन पूरा — {titleHi}।
         </p>
         <p className="font-hindi text-sm text-sakhi-muted">
-          प्रगति इस फ़ोन पर सुरक्षित है। कल फिर मिलते हैं।
+          प्रगति इस फ़ोन पर सुरक्षित है। {nextLineHi}
         </p>
       </div>
 

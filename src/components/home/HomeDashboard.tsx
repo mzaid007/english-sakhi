@@ -3,12 +3,14 @@
 import { motion } from "framer-motion";
 import { Check, Lock } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Header } from "@/components/common/Header";
 import { SyncBanner } from "@/components/sync/SyncBanner";
 import { SyncModal } from "@/components/sync/SyncModal";
 import { curriculum } from "@/data/curriculum";
 import { useProgressSync } from "@/hooks/useProgressSync";
+import { isLessonUnlocked } from "@/lib/progress";
 
 const spring = { type: "spring" as const, stiffness: 380, damping: 26 };
 
@@ -22,6 +24,7 @@ export function HomeDashboard() {
     signOut,
     lastSyncMessageHi,
   } = useProgressSync();
+  const router = useRouter();
   const [syncOpen, setSyncOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [statusHi, setStatusHi] = useState<string | null>(null);
@@ -30,6 +33,12 @@ export function HomeDashboard() {
     refreshLocal();
     setHydrated(true);
   }, [refreshLocal]);
+
+  useEffect(() => {
+    for (const lesson of curriculum) {
+      router.prefetch(`/lesson/${lesson.id}`);
+    }
+  }, [router]);
 
   useEffect(() => {
     if (lastSyncMessageHi) setStatusHi(lastSyncMessageHi);
@@ -70,6 +79,10 @@ export function HomeDashboard() {
           onSyncClick={() => setSyncOpen(true)}
         />
 
+        <p className="mb-4 font-hindi text-base leading-relaxed text-sakhi-muted lg:hidden">
+          रोज़ थोड़ी देर — सुनो, बोलो, आगे बढ़ो।
+        </p>
+
         <SyncBanner
           visible={showBanner}
           onOpenSync={() => setSyncOpen(true)}
@@ -81,6 +94,27 @@ export function HomeDashboard() {
           </p>
         )}
 
+        {hydrated &&
+          curriculum.every((lesson) =>
+            progress.completedLessons.includes(lesson.id),
+          ) && (
+            <section className="mb-4 rounded-2xl bg-sakhi-emerald-soft px-4 py-4 ring-1 ring-sakhi-emerald/20">
+              <h2 className="font-hindi text-base font-semibold text-emerald-900">
+                पाँचों मिशन पूरे
+              </h2>
+              <p className="mt-1 font-hindi text-sm leading-relaxed text-sakhi-ink">
+                इस कोर्स का नया दिन अभी नहीं है। किसी भी मिशन को फिर से खोलकर
+                सुनें और बोलें।
+              </p>
+              <Link
+                href="/lesson/day-1"
+                className="mt-3 inline-flex min-h-touch items-center font-hindi text-sm font-semibold text-sakhi-emerald"
+              >
+                दिन 1 फिर से सुनें
+              </Link>
+            </section>
+          )}
+
         <h2 className="mb-3 font-hindi text-lg font-semibold text-sakhi-ink">
           आपके मिशन
         </h2>
@@ -88,10 +122,13 @@ export function HomeDashboard() {
         <ul className="flex flex-col gap-3">
           {curriculum.map((lesson, index) => {
             const done = progress.completedLessons.includes(lesson.id);
-            const unlocked =
-              index === 0 ||
-              progress.completedLessons.includes(curriculum[index - 1].id) ||
-              lesson.day <= progress.currentDay;
+            const previous = index > 0 ? curriculum[index - 1] : null;
+            const unlocked = isLessonUnlocked(
+              index,
+              lesson.day,
+              progress,
+              previous?.id ?? null,
+            );
             const isNext =
               !done && unlocked && lesson.day === progress.currentDay;
 
@@ -133,14 +170,22 @@ export function HomeDashboard() {
                     </Link>
                   </motion.div>
                 ) : (
-                  <div className="flex min-h-touch items-center gap-3 rounded-2xl bg-surface/80 px-4 py-3 opacity-70 ring-1 ring-stone-200/60">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setStatusHi(
+                        `दिन ${lesson.day} अभी बंद है — पहले वाला मिशन पूरा करें।`,
+                      )
+                    }
+                    className="flex min-h-touch w-full cursor-pointer items-center gap-3 rounded-2xl bg-surface/80 px-4 py-3 text-left opacity-70 ring-1 ring-stone-200/60"
+                  >
                     <span className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-200 text-sakhi-muted">
-                      <Lock className="h-4 w-4" />
+                      <Lock className="h-4 w-4" aria-hidden />
                     </span>
                     <span className="font-hindi text-sm text-sakhi-muted">
                       दिन {lesson.day} — पहले वाला मिशन पूरा करें
                     </span>
-                  </div>
+                  </button>
                 )}
               </li>
             );

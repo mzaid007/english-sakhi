@@ -13,25 +13,33 @@ function hasSpeech(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+function voiceScore(voice: SpeechSynthesisVoice): number {
+  const lang = voice.lang.toLowerCase().replace("_", "-");
+  const name = voice.name.toLowerCase();
+  let score = 0;
+
+  if (lang === "en-in" || lang.startsWith("en-in")) score += 100;
+  else if (lang.startsWith("en-gb")) score += 40;
+  else if (lang.startsWith("en")) score += 20;
+  else score -= 50;
+
+  // The "I" lines are बनाती हूँ — prefer a woman's Indian voice (Heera) over Ravi.
+  if (/female|heera|aditi|neerja|swara|kajal|priya|veena/.test(name)) score += 25;
+  if (/male|ravi|prabhat|hemant|david|mark/.test(name)) score -= 15;
+  return score;
+}
+
 function pickIndianVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
   if (voices.length === 0) return null;
-
-  const byLang = (lang: string) =>
-    voices.find((v) => v.lang.toLowerCase().replace("_", "-") === lang);
-
-  return (
-    byLang("en-in") ??
-    voices.find((v) => v.lang.toLowerCase().startsWith("en-in")) ??
-    byLang("en-gb") ??
-    byLang("en-us") ??
-    voices.find((v) => v.lang.toLowerCase().startsWith("en")) ??
-    voices[0] ??
-    null
-  );
+  return [...voices].sort((a, b) => voiceScore(b) - voiceScore(a))[0] ?? null;
 }
 
 export interface UseSpeechSynthesisResult {
   isSupported: boolean;
+  /** False until the first client check. Do not show "no voice" before this. */
+  hasChecked: boolean;
+  /** True only after the check, when this phone has no speechSynthesis. */
+  audioUnavailable: boolean;
   isReady: boolean;
   isSpeaking: boolean;
   speak: (text: string, speed?: SpeechSpeed) => void;
@@ -41,6 +49,7 @@ export interface UseSpeechSynthesisResult {
 /** Indian English TTS via Web Speech API — prefers en-IN, rates 0.85 / 0.7. */
 export function useSpeechSynthesis(): UseSpeechSynthesisResult {
   const [isSupported, setIsSupported] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
@@ -48,24 +57,30 @@ export function useSpeechSynthesis(): UseSpeechSynthesisResult {
   const ownsUtteranceRef = useRef(false);
 
   useEffect(() => {
-    if (!hasSpeech()) {
-      setIsSupported(false);
+    const supported = hasSpeech();
+    setIsSupported(supported);
+    setHasChecked(true);
+
+    if (!supported) {
       setIsReady(true);
       return;
     }
 
-    setIsSupported(true);
     const synth = window.speechSynthesis;
 
     function loadVoices() {
-      voiceRef.current = pickIndianVoice(synth.getVoices());
+      const voices = synth.getVoices();
+      if (voices.length === 0) return;
+      voiceRef.current = pickIndianVoice(voices);
       setIsReady(true);
     }
 
     loadVoices();
     synth.addEventListener("voiceschanged", loadVoices);
+    const giveUpWaiting = window.setTimeout(() => setIsReady(true), 700);
 
     return () => {
+      window.clearTimeout(giveUpWaiting);
       synth.removeEventListener("voiceschanged", loadVoices);
       if (ownsUtteranceRef.current) {
         synth.cancel();
@@ -123,5 +138,13 @@ export function useSpeechSynthesis(): UseSpeechSynthesisResult {
     }
   }, []);
 
-  return { isSupported, isReady, isSpeaking, speak, stop };
+  return {
+    isSupported,
+    hasChecked,
+    audioUnavailable: hasChecked && !isSupported,
+    isReady,
+    isSpeaking,
+    speak,
+    stop,
+  };
 }

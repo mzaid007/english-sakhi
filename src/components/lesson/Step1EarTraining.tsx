@@ -18,7 +18,7 @@ export function Step1EarTraining({
   patternEmoji,
   onContinue,
 }: Step1EarTrainingProps) {
-  const { speak, isSpeaking, isSupported, isReady } = useSpeechSynthesis();
+  const { speak, isSpeaking, audioUnavailable } = useSpeechSynthesis();
 
   return (
     <section className="flex flex-col gap-5">
@@ -42,8 +42,8 @@ export function Step1EarTraining({
               {...line}
               onSpeak={speak}
               isSpeaking={isSpeaking}
-              audioDisabled={!isSupported || !isReady}
-              speechSupported={isSupported}
+              audioDisabled={audioUnavailable}
+              speechSupported={!audioUnavailable}
             />
           </li>
         ))}

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Mic, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { DualScriptText } from "@/components/common/DualScriptText";
 import { ContinueButton } from "@/components/lesson/ContinueButton";
@@ -20,7 +21,7 @@ export function Step3VoiceMission({
   step,
   onComplete,
 }: Step3VoiceMissionProps) {
-  const { speak, isSpeaking, isSupported, isReady } = useSpeechSynthesis();
+  const { speak, isSpeaking, audioUnavailable } = useSpeechSynthesis();
   const recognition = useSpeechRecognition();
   const [feedback, setFeedback] = useState<SpeakEvalResult | null>(null);
   const [evaluating, setEvaluating] = useState(false);
@@ -30,8 +31,8 @@ export function Step3VoiceMission({
     if (!transcript) {
       setFeedback({
         understood: false,
-        praise_hi: "बहुत बढ़िया कोशिश! पहले माइक दबाकर बोलें।",
-        tip_hi: "शांत जगह पर एक वाक्य साफ़ बोलें।",
+        praise_hi: "बहुत बढ़िया कोशिश! पहले माइक पर टैप करके बोलें।",
+        tip_hi: "शांत जगह पर पूरा वाक्य साफ़ बोलें।",
         model_en: step.target.en,
       });
       return;
@@ -53,9 +54,9 @@ export function Step3VoiceMission({
       if (data.model_en) speak(data.model_en);
     } catch {
       setFeedback({
-        understood: true,
-        praise_hi: "बहुत बढ़िया कोशिश! एक बार ऐसे सुनकर दोहराएँ।",
-        tip_hi: "नेट धीमा हो तो भी अभ्यास जारी रखें।",
+        understood: false,
+        praise_hi: "अभी जाँच नहीं हो सकी — फिर से कोशिश करें।",
+        tip_hi: "नेट धीमा हो तो भी वाक्य सुनकर दोहराएँ।",
         model_en: step.target.en,
       });
     } finally {
@@ -79,8 +80,8 @@ export function Step3VoiceMission({
           {...step.target}
           onSpeak={speak}
           isSpeaking={isSpeaking}
-          audioDisabled={!isSupported || !isReady}
-          speechSupported={isSupported}
+          audioDisabled={audioUnavailable}
+          speechSupported={!audioUnavailable}
         />
       </div>
 
@@ -92,7 +93,7 @@ export function Step3VoiceMission({
           onClick={() =>
             recognition.isListening ? recognition.stop() : recognition.start()
           }
-          disabled={!recognition.isSupported}
+          disabled={recognition.hasChecked && !recognition.isSupported}
           aria-pressed={recognition.isListening}
           aria-label={
             recognition.isListening ? "सुनना बंद करें" : "बोलना शुरू करें"
@@ -110,8 +111,8 @@ export function Step3VoiceMission({
         </motion.button>
         <p className="font-hindi text-sm text-sakhi-muted">
           {recognition.isListening
-            ? "सुन रहे हैं… बोलकर छोड़ें"
-            : "बड़े माइक पर टैप करें"}
+            ? "सुन रहे हैं… रोकने के लिए फिर टैप करें"
+            : "बड़े माइक पर टैप करें — बोलना शुरू"}
         </p>
       </div>
 
@@ -141,10 +142,18 @@ export function Step3VoiceMission({
 
       {feedback && (
         <div
-          className="rounded-2xl bg-sakhi-emerald-soft px-4 py-4 ring-1 ring-sakhi-emerald/20"
+          className={`rounded-2xl px-4 py-4 ring-1 ${
+            feedback.understood
+              ? "bg-sakhi-emerald-soft ring-sakhi-emerald/20"
+              : "bg-sakhi-amber-soft ring-sakhi-amber/25"
+          }`}
           role="status"
         >
-          <p className="font-hindi text-base font-semibold text-emerald-900">
+          <p
+            className={`font-hindi text-base font-semibold ${
+              feedback.understood ? "text-emerald-900" : "text-amber-950"
+            }`}
+          >
             {feedback.praise_hi}
           </p>
           <p className="mt-1 font-hindi text-sm text-sakhi-ink/90">
@@ -153,10 +162,16 @@ export function Step3VoiceMission({
         </div>
       )}
 
-      <ContinueButton
-        onContinue={onComplete}
-        label={feedback ? "मिशन पूरा करें" : "बाद में पूरा करें"}
-      />
+      {feedback?.understood ? (
+        <ContinueButton onContinue={onComplete} label="मिशन पूरा करें" />
+      ) : (
+        <Link
+          href="/"
+          className="flex min-h-touch w-full items-center justify-center rounded-2xl bg-white px-4 font-hindi text-base font-semibold text-sakhi-ink ring-1 ring-stone-300"
+        >
+          अभी छोड़ें
+        </Link>
+      )}
     </section>
   );
 }

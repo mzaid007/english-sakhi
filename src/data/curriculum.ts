@@ -1,4 +1,5 @@
-import type { LessonDay } from "@/lib/types";
+import { composeSentence } from "@/lib/sentence";
+import type { LessonDay, VoiceMissionStep } from "@/lib/types";
 
 export const curriculum: LessonDay[] = [
   {
@@ -27,11 +28,14 @@ export const curriculum: LessonDay[] = [
       subject: {
         id: "i",
         role: "who",
+        frame_hi: "कौन",
         en: "I",
         phonetic_hi: "आई",
         hi: "मैं",
       },
       defaultActionId: "make-tea",
+      choice_role: "action",
+      choice_label_hi: "क्या काम? — एक चुनें",
       actions: [
         {
           id: "make-tea",
@@ -39,13 +43,15 @@ export const curriculum: LessonDay[] = [
           en: "make tea every day",
           phonetic_hi: "मेक टी एव्री डे",
           hi: "रोज़ चाय बनाती हूँ",
+          speak_context_hi: "टीचर से कहें — मैं रोज़ चाय बनाती हूँ",
         },
         {
           id: "cook-rice",
           emoji: "🍚",
           en: "cook rice every day",
-          phonetic_hi: "कुк राइस एव्री डे",
+          phonetic_hi: "कुक राइस एव्री डे",
           hi: "रोज़ चावल बनाती हूँ",
+          speak_context_hi: "टीचर से कहें — मैं रोज़ चावल बनाती हूँ",
         },
         {
           id: "pack-tiffin",
@@ -53,12 +59,13 @@ export const curriculum: LessonDay[] = [
           en: "pack tiffin every day",
           phonetic_hi: "पैक टिफ़िन एव्री डे",
           hi: "रोज़ टिफ़िन पैक करती हूँ",
+          speak_context_hi: "टीचर से कहें — मैं रोज़ टिफ़िन पैक करती हूँ",
         },
       ],
     },
     voice: {
-      prompt_hi: "माइक दबाकर बोलें",
-      context_hi: "टीचर से कहें — आप रोज़ चाय बनाती हैं",
+      prompt_hi: "माइक पर टैप करके बोलें",
+      context_hi: "टीचर से कहें — मैं रोज़ चाय बनाती हूँ",
       target: {
         en: "I make tea every day",
         phonetic_hi: "आई मेक टी एव्री डे",
@@ -83,7 +90,7 @@ export const curriculum: LessonDay[] = [
         },
         {
           en: "He is playing football",
-          phonetic_hi: "ही इज़ प्लेइंग फुटबॉल",
+          phonetic_hi: "हे इज़ प्लेइंग फुटबॉल",
           hi: "वह फुटबॉल खेल रहा है",
         },
       ],
@@ -92,11 +99,14 @@ export const curriculum: LessonDay[] = [
       subject: {
         id: "aarav",
         role: "who",
+        frame_hi: "कौन",
         en: "Aarav",
         phonetic_hi: "आरव",
         hi: "आरव",
       },
       defaultActionId: "studying-well",
+      choice_role: "action",
+      choice_label_hi: "क्या काम? — एक चुनें",
       actions: [
         {
           id: "studying-well",
@@ -104,6 +114,7 @@ export const curriculum: LessonDay[] = [
           en: "is studying well",
           phonetic_hi: "इज़ स्टडीइंग वेल",
           hi: "अच्छी तरह पढ़ाई कर रहा है",
+          speak_context_hi: "स्कूल में टीचर से कहें — आरव अच्छी तरह पढ़ाई कर रहा है",
         },
         {
           id: "playing-football",
@@ -111,6 +122,7 @@ export const curriculum: LessonDay[] = [
           en: "is playing football",
           phonetic_hi: "इज़ प्लेइंग फुटबॉल",
           hi: "फुटबॉल खेल रहा है",
+          speak_context_hi: "स्कूल में टीचर से कहें — आरव फुटबॉल खेल रहा है",
         },
         {
           id: "eating-lunch",
@@ -118,12 +130,13 @@ export const curriculum: LessonDay[] = [
           en: "is eating lunch",
           phonetic_hi: "इज़ ईटिंग लंच",
           hi: "दोपहर का खाना खा रहा है",
+          speak_context_hi: "स्कूल में टीचर से कहें — आरव दोपहर का खाना खा रहा है",
         },
       ],
     },
     voice: {
-      prompt_hi: "माइक दबाकर बोलें",
-      context_hi: "स्कूल में टीचर से कहें — आरव अच्छी पढ़ाई कर रहा है",
+      prompt_hi: "माइक पर टैप करके बोलें",
+      context_hi: "स्कूल में टीचर से कहें — आरव अच्छी तरह पढ़ाई कर रहा है",
       target: {
         en: "Aarav is studying well",
         phonetic_hi: "आरव इज़ स्टडीइंग वेल",
@@ -157,11 +170,14 @@ export const curriculum: LessonDay[] = [
       subject: {
         id: "please",
         role: "who",
+        frame_hi: "विनम्र शब्द",
         en: "Please",
         phonetic_hi: "प्लीज़",
         hi: "कृपया",
       },
       defaultActionId: "give-bill",
+      choice_role: "action",
+      choice_label_hi: "क्या काम? — एक चुनें",
       actions: [
         {
           id: "give-bill",
@@ -169,6 +185,7 @@ export const curriculum: LessonDay[] = [
           en: "give me the bill",
           phonetic_hi: "गिव मी द बिल",
           hi: "बिल दे दीजिए",
+          speak_context_hi: "रेस्टोरेंट में विनम्रता से बिल माँगें",
         },
         {
           id: "call-waiter",
@@ -176,6 +193,7 @@ export const curriculum: LessonDay[] = [
           en: "call the waiter",
           phonetic_hi: "कॉल द वेटर",
           hi: "वेटर को बुला दीजिए",
+          speak_context_hi: "रेस्टोरेंट में विनम्रता से वेटर को बुलाएँ",
         },
         {
           id: "pack-food",
@@ -183,11 +201,12 @@ export const curriculum: LessonDay[] = [
           en: "pack the food",
           phonetic_hi: "पैक द फ़ूड",
           hi: "खाना पैक कर दीजिए",
+          speak_context_hi: "रेस्टोरेंट में विनम्रता से खाना पैक करवाएँ",
         },
       ],
     },
     voice: {
-      prompt_hi: "माइक दबाकर बोलें",
+      prompt_hi: "माइक पर टैप करके बोलें",
       context_hi: "रेस्टोरेंट में विनम्रता से बिल माँगें",
       target: {
         en: "Please give me the bill",
@@ -213,7 +232,7 @@ export const curriculum: LessonDay[] = [
         },
         {
           en: "Is he listening in class?",
-          phonetic_hi: "इज़ ही लिसनिंग इन क्लास?",
+          phonetic_hi: "इज़ हे लिसनिंग इन क्लास?",
           hi: "क्या वह क्लास में ध्यान से सुनता है?",
         },
       ],
@@ -222,11 +241,14 @@ export const curriculum: LessonDay[] = [
       subject: {
         id: "how-is",
         role: "who",
+        frame_hi: "सवाल",
         en: "How is",
         phonetic_hi: "हाउ इज़",
-        hi: "कैसी है",
+        hi: "",
       },
       defaultActionId: "handwriting",
+      choice_role: "what",
+      choice_label_hi: "किस बारे में? — एक चुनें",
       actions: [
         {
           id: "handwriting",
@@ -234,6 +256,9 @@ export const curriculum: LessonDay[] = [
           en: "his handwriting",
           phonetic_hi: "हिज़ हैंडराइटिंग",
           hi: "उसकी लिखाई",
+          hi_sentence: "उसकी लिखाई कैसी है?",
+          en_end: "?",
+          speak_context_hi: "PTM पर टीचर से लिखाई के बारे में पूछें",
         },
         {
           id: "homework",
@@ -241,6 +266,9 @@ export const curriculum: LessonDay[] = [
           en: "his homework",
           phonetic_hi: "हिज़ होमवर्क",
           hi: "उसका होमवर्क",
+          hi_sentence: "उसका होमवर्क कैसा है?",
+          en_end: "?",
+          speak_context_hi: "PTM पर टीचर से होमवर्क के बारे में पूछें",
         },
         {
           id: "behaviour",
@@ -248,11 +276,14 @@ export const curriculum: LessonDay[] = [
           en: "his behaviour",
           phonetic_hi: "हिज़ बिहेवियर",
           hi: "उसका व्यवहार",
+          hi_sentence: "उसका व्यवहार कैसा है?",
+          en_end: "?",
+          speak_context_hi: "PTM पर टीचर से व्यवहार के बारे में पूछें",
         },
       ],
     },
     voice: {
-      prompt_hi: "माइक दबाकर बोलें",
+      prompt_hi: "माइक पर टैप करके बोलें",
       context_hi: "PTM पर टीचर से लिखाई के बारे में पूछें",
       target: {
         en: "How is his handwriting?",
@@ -266,20 +297,20 @@ export const curriculum: LessonDay[] = [
     day: 5,
     title_hi: "क्लिनिक और डॉक्टर",
     title_en: "Clinic & doctor",
-    pattern_label: "काम पूरा / हाल बताना",
+    pattern_label: "हाल बताना",
     pattern_emoji: "⏳",
     ear: {
       prompt_hi: "सुनें — डॉक्टर से हाल बताना",
       lines: [
         {
-          en: "I have a headache since morning",
-          phonetic_hi: "आई हैव अ हेडेक सिन्स मॉर्निंग",
-          hi: "सुबह से सिरदर्द है",
+          en: "I have a headache. It started this morning",
+          phonetic_hi: "आई हैव अ हेडेक. इट स्टार्टिड दिस मॉर्निंग",
+          hi: "मुझे सुबह से सिरदर्द है",
         },
         {
-          en: "He has a fever since yesterday",
-          phonetic_hi: "ही हैज़ अ फ़ीवर सिन्स येस्टरडे",
-          hi: "कल से बुखार है",
+          en: "He has a fever. It started yesterday",
+          phonetic_hi: "हे हैज़ अ फ़ीवर. इट स्टार्टिड येस्टरडे",
+          hi: "उसे कल से बुखार है",
         },
       ],
     },
@@ -287,42 +318,48 @@ export const curriculum: LessonDay[] = [
       subject: {
         id: "i-have",
         role: "who",
+        frame_hi: "कौन",
         en: "I have",
         phonetic_hi: "आई हैव",
-        hi: "मुझे है",
+        hi: "मुझे",
       },
       defaultActionId: "headache",
+      choice_role: "what",
+      choice_label_hi: "क्या तकलीफ़? — एक चुनें",
       actions: [
         {
           id: "headache",
           emoji: "🤕",
-          en: "a headache since morning",
-          phonetic_hi: "अ हेडेक सिन्स मॉर्निंग",
-          hi: "सुबह से सिरदर्द",
+          en: "a headache. It started this morning",
+          phonetic_hi: "अ हेडेक. इट स्टार्टिड दिस मॉर्निंग",
+          hi: "सुबह से सिरदर्द है",
+          speak_context_hi: "डॉक्टर को बताएँ — मुझे सुबह से सिरदर्द है",
         },
         {
           id: "cold",
           emoji: "🤧",
-          en: "a cold since yesterday",
-          phonetic_hi: "अ कोल्ड सिन्स येस्टरडे",
-          hi: "कल से सर्दी-ज़ुकाम",
+          en: "a cold. It started yesterday",
+          phonetic_hi: "अ कोल्ड. इट स्टार्टिड येस्टरडे",
+          hi: "कल से सर्दी-ज़ुकाम है",
+          speak_context_hi: "डॉक्टर को बताएँ — मुझे कल से सर्दी-ज़ुकाम है",
         },
         {
           id: "stomach-pain",
           emoji: "🩹",
-          en: "stomach pain since night",
-          phonetic_hi: "स्टमक पेन सिन्स नाइट",
-          hi: "रात से पेट दर्द",
+          en: "a stomach ache. It started last night",
+          phonetic_hi: "अ स्टमक एक. इट स्टार्टिड लास्ट नाइट",
+          hi: "रात से पेट दर्द है",
+          speak_context_hi: "डॉक्टर को बताएँ — मुझे रात से पेट दर्द है",
         },
       ],
     },
     voice: {
-      prompt_hi: "माइक दबाकर बोलें",
-      context_hi: "डॉक्टर को सुबह से सिरदर्द बताएँ",
+      prompt_hi: "माइक पर टैप करके बोलें",
+      context_hi: "डॉक्टर को बताएँ — मुझे सुबह से सिरदर्द है",
       target: {
-        en: "I have a headache since morning",
-        phonetic_hi: "आई हैव अ हेडेक सिन्स मॉर्निंग",
-        hi: "सुबह से सिरदर्द है",
+        en: "I have a headache. It started this morning",
+        phonetic_hi: "आई हैव अ हेडेक. इट स्टार्टिड दिस मॉर्निंग",
+        hi: "मुझे सुबह से सिरदर्द है",
       },
     },
   },
@@ -334,4 +371,20 @@ export function getLessonById(id: string): LessonDay | undefined {
 
 export function getLessonByDay(day: number): LessonDay | undefined {
   return curriculum.find((lesson) => lesson.day === day);
+}
+
+/** Speaking card follows the pill chosen on the swap step. */
+export function voiceForChoice(
+  lesson: LessonDay,
+  actionId: string,
+): VoiceMissionStep {
+  const action =
+    lesson.substitution.actions.find((item) => item.id === actionId) ??
+    lesson.substitution.actions[0];
+
+  return {
+    prompt_hi: "माइक पर टैप करके बोलें",
+    context_hi: action.speak_context_hi ?? lesson.voice.context_hi,
+    target: composeSentence(lesson.substitution.subject, action),
+  };
 }

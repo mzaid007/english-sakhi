@@ -5,42 +5,38 @@ import { useEffect, useRef, useState } from "react";
 import { DualScriptText } from "@/components/common/DualScriptText";
 import { day1Substitution } from "@/data/day1";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
-import type { ActionOption, DualScript, SubstitutionLesson } from "@/lib/types";
+import { composeSentence } from "@/lib/sentence";
+import type { ActionOption, SubstitutionLesson } from "@/lib/types";
 
 interface SubstitutionCardProps {
   lesson?: SubstitutionLesson;
+  selectedId?: string;
+  onSelectedId?: (id: string) => void;
 }
 
 const spring = { type: "spring" as const, stiffness: 420, damping: 26 };
 
-function buildSentence(subject: DualScript, action: ActionOption): DualScript {
-  return {
-    en: `${subject.en} ${action.en}`,
-    phonetic_hi: `${subject.phonetic_hi} ${action.phonetic_hi}`,
-    hi: `${subject.hi} ${action.hi}`,
-  };
-}
-
 /**
  * Wren & Martin–style substitution table:
- * tap green action pills to rebuild the sentence and hear it instantly.
+ * tap pills to rebuild the sentence and hear it instantly.
  */
 export function SubstitutionCard({
   lesson = day1Substitution,
+  selectedId,
+  onSelectedId,
 }: SubstitutionCardProps) {
-  const { speak, isSpeaking, isSupported, isReady } = useSpeechSynthesis();
-  const [selectedId, setSelectedId] = useState(lesson.defaultActionId);
+  const { speak, isSpeaking, isReady, audioUnavailable } = useSpeechSynthesis();
+  const [internalId, setInternalId] = useState(
+    selectedId ?? lesson.defaultActionId,
+  );
   const didAutoSpeak = useRef(false);
-
-  useEffect(() => {
-    setSelectedId(lesson.defaultActionId);
-    didAutoSpeak.current = false;
-  }, [lesson.id, lesson.defaultActionId]);
+  const activeId = selectedId ?? internalId;
+  const choiceIsWhat = lesson.choice_role === "what";
 
   const selected =
-    lesson.actions.find((a) => a.id === selectedId) ?? lesson.actions[0];
-  const sentence = buildSentence(lesson.subject, selected);
-  const audioReady = isSupported && isReady;
+    lesson.actions.find((a) => a.id === activeId) ?? lesson.actions[0];
+  const sentence = composeSentence(lesson.subject, selected);
+  const audioReady = isReady && !audioUnavailable;
 
   // Speak the default sentence once voices are ready.
   useEffect(() => {
@@ -50,9 +46,10 @@ export function SubstitutionCard({
   }, [audioReady, speak, sentence.en]);
 
   function onSelect(action: ActionOption) {
-    setSelectedId(action.id);
+    setInternalId(action.id);
+    onSelectedId?.(action.id);
     if (audioReady) {
-      speak(buildSentence(lesson.subject, action).en);
+      speak(composeSentence(lesson.subject, action).en);
     }
   }
 
@@ -81,8 +78,14 @@ export function SubstitutionCard({
       </div>
 
       <div className="mb-5 flex flex-wrap items-center gap-2" aria-hidden>
-        <span className="inline-flex min-h-touch items-center rounded-2xl bg-who-soft px-3 py-2 text-sm font-semibold text-amber-900 ring-1 ring-who/40">
-          🟡 {lesson.subject.en}
+        <span className="inline-flex min-h-touch items-center gap-2 rounded-2xl bg-who-soft px-3 py-2 text-sm font-semibold text-amber-900 ring-1 ring-who/40">
+          <span aria-hidden>🟡</span>
+          <span className="flex flex-col items-start">
+            <span className="font-hindi text-xs font-medium">
+              {lesson.subject.frame_hi ?? "कौन"}
+            </span>
+            <span>{lesson.subject.en}</span>
+          </span>
         </span>
         <AnimatePresence mode="wait">
           <motion.span
@@ -91,9 +94,19 @@ export function SubstitutionCard({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={spring}
-            className="inline-flex min-h-touch items-center rounded-2xl bg-action-soft px-3 py-2 text-sm font-semibold text-emerald-900 ring-1 ring-action/30"
+            className={`inline-flex min-h-touch max-w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold ring-1 ${
+              choiceIsWhat
+                ? "bg-where-soft text-blue-900 ring-where/40"
+                : "bg-action-soft text-emerald-900 ring-action/30"
+            }`}
           >
-            🟢 {selected.en}
+            <span aria-hidden>{choiceIsWhat ? "🔵" : "🟢"}</span>
+            <span className="flex min-w-0 flex-col items-start">
+              <span className="font-hindi text-xs font-medium">
+                {choiceIsWhat ? "क्या" : "क्या काम"}
+              </span>
+              <span className="text-left leading-snug">{selected.en}</span>
+            </span>
           </motion.span>
         </AnimatePresence>
       </div>
@@ -114,18 +127,22 @@ export function SubstitutionCard({
               size="lg"
               onSpeak={speak}
               isSpeaking={isSpeaking}
-              audioDisabled={!audioReady}
-              speechSupported={isSupported}
+              audioDisabled={audioUnavailable}
+              speechSupported={!audioUnavailable}
             />
           </motion.div>
         </AnimatePresence>
       </div>
 
       <p className="mb-3 font-hindi text-sm font-medium text-sakhi-ink">
-        क्या काम? — एक चुनें
+        {lesson.choice_label_hi ?? "क्या काम? — एक चुनें"}
       </p>
 
-      <ul className="flex flex-col gap-3" role="listbox" aria-label="क्रिया चुनें">
+      <ul
+        className="flex flex-col gap-3"
+        role="listbox"
+        aria-label={lesson.choice_label_hi ?? "एक चुनें"}
+      >
         {lesson.actions.map((action) => {
           const isActive = action.id === selected.id;
           return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Cloud, CloudOff, Mail, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -53,6 +53,15 @@ export function SyncModal({
   }, [open, isSynced]);
 
   useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  useEffect(() => {
     if (!open || isSynced) return;
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
@@ -77,8 +86,10 @@ export function SyncModal({
       return;
     }
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed.includes("@")) {
-      setMessageHi("कृपया सही ईमेल लिखें।");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setMessageHi(
+        "ईमेल अंग्रेज़ी अक्षरों में होता है — उसमें @ और डॉट होना चाहिए।",
+      );
       return;
     }
 
@@ -117,24 +128,22 @@ export function SyncModal({
     }
   }
 
+  if (!open) return null;
+
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
+        <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-sakhi-ink/40 p-4 sm:items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="sync-modal-title"
+          onClick={onClose}
         >
           <motion.div
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 24, opacity: 0 }}
             transition={spring}
             className="w-full max-w-md rounded-3xl bg-cream p-5 shadow-soft"
+            onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -189,6 +198,9 @@ export function SyncModal({
                   पासवर्ड नहीं लगेगा। हम ईमेल पर एक <strong>साइन-इन लिंक</strong>{" "}
                   भेजेंगे — उसी फ़ोन पर टैप करें।
                 </p>
+                <p className="font-hindi text-sm leading-relaxed text-sakhi-ink">
+                  ईमेल अंग्रेज़ी अक्षरों में लिखें। उदाहरण: naam@email.com
+                </p>
                 <label className="font-hindi text-sm font-medium text-sakhi-ink">
                   ईमेल
                   <input
@@ -197,7 +209,7 @@ export function SyncModal({
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="aapka@email.com"
+                    placeholder="naam@email.com"
                     className="mt-1 w-full min-h-touch rounded-2xl border border-stone-200 bg-white px-4 text-base text-sakhi-ink outline-none focus:border-sakhi-emerald focus:ring-2 focus:ring-sakhi-emerald/30"
                   />
                 </label>
@@ -254,8 +266,6 @@ export function SyncModal({
               </p>
             )}
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
   );
 }

@@ -41,9 +41,9 @@ function DualScriptBody({
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      <div className="flex items-start gap-3">
+      <div className="flex flex-col items-start gap-3">
         <p
-          className={`${enSize} font-sans font-semibold leading-snug tracking-tight text-sakhi-ink`}
+          className={`${enSize} w-full font-sans font-semibold leading-snug tracking-tight text-sakhi-ink`}
           lang="en"
         >
           {en}
@@ -83,15 +83,15 @@ function DualScriptBody({
 
 /** Standalone variant — owns its own TTS hook. */
 function DualScriptTextStandalone(props: DualScriptTextProps) {
-  const { speak, isSpeaking, isSupported, isReady } = useSpeechSynthesis();
+  const { speak, isSpeaking, audioUnavailable } = useSpeechSynthesis();
 
   return (
     <DualScriptBody
       {...props}
       speak={speak}
       speaking={isSpeaking}
-      disabled={!isSupported || !isReady}
-      supported={isSupported}
+      disabled={audioUnavailable}
+      supported={!audioUnavailable}
     />
   );
 }

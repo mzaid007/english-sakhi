@@ -31,6 +31,7 @@ function getRecognitionCtor(): RecognitionCtor | null {
 
 export interface UseSpeechRecognitionResult {
   isSupported: boolean;
+  hasChecked: boolean;
   isListening: boolean;
   transcript: string;
   errorHi: string | null;
@@ -41,6 +42,7 @@ export interface UseSpeechRecognitionResult {
 
 export function useSpeechRecognition(): UseSpeechRecognitionResult {
   const [isSupported, setIsSupported] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [errorHi, setErrorHi] = useState<string | null>(null);
@@ -49,6 +51,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
   useEffect(() => {
     const Ctor = getRecognitionCtor();
     setIsSupported(Boolean(Ctor));
+    setHasChecked(true);
     return () => {
       recognitionRef.current?.abort();
     };
@@ -112,6 +115,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
 
   return {
     isSupported,
+    hasChecked,
     isListening,
     transcript,
     errorHi,

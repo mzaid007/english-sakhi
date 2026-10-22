@@ -6,16 +6,22 @@ import type { LessonDay } from "@/lib/types";
 
 interface Step2SubstitutionProps {
   lesson: LessonDay;
+  selectedId: string;
+  onSelectedId: (id: string) => void;
   onContinue: () => void;
 }
 
 export function Step2Substitution({
   lesson,
+  selectedId,
+  onSelectedId,
   onContinue,
 }: Step2SubstitutionProps) {
   return (
     <div className="flex flex-col gap-6">
       <SubstitutionCard
+        selectedId={selectedId}
+        onSelectedId={onSelectedId}
         lesson={{
           id: lesson.id,
           day: lesson.day,
